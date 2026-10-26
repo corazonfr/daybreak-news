@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Daybreak News</title>
+<meta name="description" content="Today's news in one fun page: world headlines, what everyone is reading, tech, space, a daily game and the strangest Florida Man story. Updated every day.">
+<meta property="og:title" content="Daybreak News">
+<meta property="og:description" content="Today's news in one fun page. Fresh every day, free for everyone.">
+<meta name="theme-color" content="#2443d6">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232443d6'/%3E%3Cpath d='M6 22a10 10 0 0 1 20 0z' fill='%23ffb020'/%3E%3Crect x='4' y='23' width='24' height='3' rx='1.5' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the news</a>
+
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="brand" href="#top" aria-label="Daybreak News, back to top">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="27" r="11" class="sun"/><g class="rays"><rect x="19" y="3" width="2" height="6" rx="1"/><rect x="6" y="9" width="2" height="6" rx="1" transform="rotate(-45 7 12)"/><rect x="32" y="9" width="2" height="6" rx="1" transform="rotate(45 33 12)"/></g><rect x="3" y="27" width="34" height="10" class="horizon"/><rect x="5" y="30" width="30" height="2.5" rx="1.25" class="line"/></svg>
+      <span class="brand-name">Daybreak</span>
+    </a>
+    <div class="edition">
+      <span id="edition-date">Today</span>
+      <span class="edition-sep" aria-hidden="true">·</span>
+      <span id="edition-time" class="mono">Loading the news</span>
+    </div>
+    <div class="masthead-tools">
+      <label class="search" for="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <span class="sr">Search today's stories</span>
+        <input id="search" type="search" placeholder="Search today" autocomplete="off">
+        <kbd>/</kbd>
+      </label>
+      <button class="icon-btn" id="refresh-btn" type="button" title="Get the latest stories" aria-label="Get the latest stories">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+      </button>
+      <button class="icon-btn" id="saved-btn" type="button" aria-label="Saved stories">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+        <span class="badge" id="saved-count" hidden>0</span>
+      </button>
+      <button class="icon-btn" id="theme-btn" type="button" aria-label="Switch light or dark mode">
+        <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="wrap sections-nav" aria-label="Sections">
+    <a href="#brief" class="chip" style="--c:var(--sun)">The Brief</a>
+    <a href="#world" class="chip" style="--c:var(--world)">World</a>
+    <a href="#trending" class="chip" style="--c:var(--trend)">Trending</a>
+    <a href="#tech" class="chip" style="--c:var(--tech)">Tech</a>
+    <a href="#space" class="chip" style="--c:var(--space)">Space</a>
+    <a href="#play" class="chip" style="--c:var(--play)">Play</a>
+    <a href="#weird" class="chip" style="--c:var(--weird)">Weird</a>
+    <a href="#history" class="chip" style="--c:var(--history)">On this day</a>
+    <button type="button" class="chip chip-surprise" id="surprise-btn">Surprise me</button>
+  </nav>
+</header>
+
+<main id="main" class="wrap">
+  <p class="greeting" id="top"><span id="greeting">Good morning.</span> <span id="greeting-sub" class="muted">Here's what's happening.</span></p>
+
+  <section class="hero" id="brief" aria-labelledby="brief-h">
+    <div class="brief card" style="--c:var(--sun)">
+      <div class="brief-head">
+        <h2 id="brief-h" class="kicker">The Brief <span class="muted">· today's biggest stories</span></h2>
+        <div class="brief-ctrl">
+          <span class="mono" id="brief-pos">0 / 0</span>
+          <button class="round-btn" id="brief-prev" type="button" aria-label="Previous story"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button>
+          <button class="round-btn" id="brief-next" type="button" aria-label="Next story"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button>
+        </div>
+      </div>
+      <div class="brief-progress" id="brief-progress" aria-hidden="true"></div>
+      <div class="brief-stage" id="brief-stage" aria-live="polite">
+        <div class="skeleton-block"></div>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div class="card weather" id="weather" style="--c:var(--world)">
+        <h2 class="kicker">Weather</h2>
+        <div id="weather-body">
+          <p class="muted small">See today's weather where you are.</p>
+          <div class="weather-actions">
+            <button class="btn" id="weather-locate" type="button">Use my location</button>
+          </div>
+          <form class="weather-form" id="weather-form">
+            <label class="sr" for="weather-city">City</label>
+            <input id="weather-city" type="text" placeholder="Or type a city" autocomplete="address-level2">
+            <button class="btn btn-ghost" type="submit">Go</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card streak" style="--c:var(--weird)">
+        <div class="streak-num mono" id="streak-num">1</div>
+        <div>
+          <h2 class="kicker">Day streak</h2>
+          <p class="small" id="streak-text">Come back tomorrow to keep it going.</p>
+        </div>
+      </div>
+
+      <figure class="card potd" id="potd" style="--c:var(--history)">
+        <div class="potd-img skeleton-block"></div>
+        <figcaption><span class="kicker">Picture of the day</span><span id="potd-cap" class="small muted"></span></figcaption>
+      </figure>
+    </aside>
+  </section>
+
+  <section class="section" id="world" style="--c:var(--world)" aria-labelledby="world-h">
+    <div class="section-head">
+      <h2 id="world-h"><span class="tag">World</span> On the wire today</h2>
+      <div class="tabs" id="world-days" role="tablist" aria-label="Pick a day"></div>
+    </div>
+    <p class="section-note muted small">Short, sourced summaries of what happened, written by Wikipedia's Current Events editors. Tap a source to read the full report.</p>
+    <div class="wire" id="world-body"><div class="skeleton-lines"></div></div>
+  </section>
+
+  <section class="section" id="trending" style="--c:var(--trend)" aria-labelledby="trend-h">
+    <div class="section-head">
+      <h2 id="trend-h"><span class="tag">Trending</span> What the world read yesterday</h2>
+      <span class="muted small mono" id="trend-date"></span>
+    </div>
+    <div class="trend-grid" id="trend-body"><div class="skeleton-lines"></div></div>
+  </section>
+
+  <div class="split">
+    <section class="section" id="tech" style="--c:var(--tech)" aria-labelledby="tech-h">
+      <div class="section-head">
+        <h2 id="tech-h"><span class="tag">Tech</span> Top of Hacker News</h2>
+      </div>
+      <ol class="hn" id="tech-body"><li class="skeleton-lines"></li></ol>
+    </section>
+
+    <section class="section" id="play" style="--c:var(--play)" aria-labelledby="play-h">
+      <div class="section-head">
+        <h2 id="play-h"><span class="tag">Play</span> Higher or lower?</h2>
+        <span class="mono small" id="hl-score">Score 0 · Best 0</span>
+      </div>
+      <p class="muted small">Which Wikipedia page got more readers yesterday? Real numbers, new every day.</p>
+      <div class="hl" id="hl-body"><div class="skeleton-block"></div></div>
+    </section>
+  </div>
+
+  <section class="section" id="space" style="--c:var(--space)" aria-labelledby="space-h">
+    <div class="section-head">
+      <h2 id="space-h"><span class="tag">Space</span> Launches, missions and more</h2>
+    </div>
+    <div class="space-grid" id="space-body"><div class="skeleton-lines"></div></div>
+  </section>
+
+  <div class="split">
+    <section class="section" id="weird" style="--c:var(--weird)" aria-labelledby="weird-h">
+      <div class="section-head">
+        <h2 id="weird-h"><span class="tag">Weird</span> Florida Man, on this date</h2>
+      </div>
+      <div class="fm card" id="weird-body"><div class="skeleton-lines"></div></div>
+    </section>
+
+    <section class="section" id="history" style="--c:var(--history)" aria-labelledby="history-h">
+      <div class="section-head">
+        <h2 id="history-h"><span class="tag">On this day</span> <span id="history-date">in history</span></h2>
+      </div>
+      <ol class="timeline" id="history-body"><li class="skeleton-lines"></li></ol>
+      <button class="btn btn-ghost" id="history-more" type="button" hidden>Show more years</button>
+    </section>
+  </div>
+
+  <p class="no-results card" id="no-results" hidden>No stories match that search. Try a shorter word.</p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Daybreak</strong> builds a fresh paper every time you open it, straight from free public sources:
+      <a href="https://en.wikipedia.org/wiki/Portal:Current_events" target="_blank" rel="noopener">Wikipedia Current Events</a>,
+      <a href="https://en.wikipedia.org/wiki/Main_Page" target="_blank" rel="noopener">Wikipedia In the News</a>,
+      <a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a>,
+      <a href="https://spaceflightnewsapi.net" target="_blank" rel="noopener">Spaceflight News API</a>,
+      <a href="https://github.com/juliayxhuang/florida-man-api" target="_blank" rel="noopener">Florida Man API</a> and
+      <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>.
+      APIs found through <a href="https://github.com/public-apis/public-apis" target="_blank" rel="noopener">public-apis</a>.</p>
+    <p class="muted small">No accounts, no ads, no tracking. Your saved stories and game scores stay on your device.</p>
+  </div>
+</footer>
+
+<dialog class="drawer" id="saved-drawer" aria-labelledby="saved-h">
+  <div class="drawer-head">
+    <h2 id="saved-h">Saved stories</h2>
+    <button class="icon-btn" id="saved-close" type="button" aria-label="Close saved stories"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+  <ul class="saved-list" id="saved-list"></ul>
+  <p class="muted small" id="saved-empty">Tap the bookmark on any story to keep it here for later.</p>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
