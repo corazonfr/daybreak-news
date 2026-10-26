@@ -88,6 +88,84 @@
     return out;
   }
 
+  /* ---------- Explain simply: plain-language notes from Simple English Wikipedia ---------- */
+  const SKIP_TITLE = /^(Portal|File|Help|Special|Category|Template|Wikipedia):|^\d{1,4}( (BC|AD))?$|^(January|February|March|April|May|June|July|August|September|October|November|December)( \d{1,2})?$/;
+
+  /* Article titles linked from a chunk of Wikipedia HTML, in order, without repeats. */
+  function wikiTitles(node) {
+    const seen = new Set();
+    for (const a of node.querySelectorAll("a[href]")) {
+      if (a.classList.contains("external")) continue;
+      const m = (a.getAttribute("href") || "").match(/^(?:\.\/|\/wiki\/)([^#?]+)/);
+      if (!m) continue;
+      let t;
+      try { t = decodeURIComponent(m[1]).replace(/_/g, " "); } catch { continue; }
+      if (!SKIP_TITLE.test(t)) seen.add(t);
+    }
+    return [...seen];
+  }
+
+  const firstSentences = (text, n) => {
+    // Parenthetical asides (pronunciations, translations, birth dates) are what make these hard to read.
+    let plain = (text || "").replace(/\s+/g, " ");
+    for (let i = 0; i < 3; i++) plain = plain.replace(/\s*\([^()]*\)/g, "");
+    const parts = plain.replace(/\s+([,.;])/g, "$1").trim().split(/(?<=[.!?])\s+(?=[A-Z"“(])/);
+    let out = parts.slice(0, n).join(" ");
+    if (out.length > 300) out = out.slice(0, 297).replace(/\s+\S*$/, "") + "…";
+    return out;
+  };
+
+  const explainCache = new Map();
+  function explainTerm(title) {
+    if (!explainCache.has(title)) {
+      const path = encodeURIComponent(title.replace(/ /g, "_"));
+      const usable = s => (s && s.type === "standard" && s.extract ? s : null);
+      explainCache.set(title, Promise.all([
+        getJSON(`https://simple.wikipedia.org/api/rest_v1/page/summary/${path}`, { timeout: 8000 }).catch(() => null),
+        getJSON(`${WIKI}/api/rest_v1/page/summary/${path}`, { timeout: 8000 }).catch(() => null),
+      ]).then(([simple, en]) => {
+        simple = usable(simple); en = usable(en);
+        if (!simple && !en) return null;
+        return {
+          title: en?.titles?.normalized || simple?.titles?.normalized || title,
+          short: en?.description || simple?.description || "",
+          text: simple ? firstSentences(simple.extract, 2) : firstSentences(en.extract, 1),
+          url: en?.content_urls?.desktop?.page || simple?.content_urls?.desktop?.page,
+        };
+      }));
+    }
+    return explainCache.get(title);
+  }
+
+  /* A button that opens a panel explaining the ongoing story and the names in it. */
+  function explainButton({ background = [], words = [] }) {
+    const wrap = document.createElement("div");
+    wrap.className = "explain";
+    const bg = background.slice(0, 2);
+    const terms = words.filter(t => !bg.includes(t)).slice(0, 5);
+    if (!bg.length && !terms.length) return wrap;
+    wrap.innerHTML = `<button class="explain-btn" type="button" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6v.4"/><circle cx="12" cy="17" r=".6"/></svg><span>Explain simply</span></button><div class="explain-box" hidden></div>`;
+    const btn = $("button", wrap), box = $(".explain-box", wrap);
+    let loaded = false;
+    btn.addEventListener("click", async () => {
+      const open = box.hidden;
+      box.hidden = !open;
+      btn.setAttribute("aria-expanded", open);
+      $("span", btn).textContent = open ? "Hide explanation" : "Explain simply";
+      if (!open || loaded) return;
+      loaded = true;
+      box.innerHTML = `<p class="xb-note">Looking up the people, places and ideas in this story…</p>`;
+      const [bgInfo, termInfo] = await Promise.all([Promise.all(bg.map(explainTerm)), Promise.all(terms.map(explainTerm))]);
+      const list = infos => infos.filter(Boolean).map(x => `<div class="xt"><dt><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a>${x.short ? ` <span>${esc(x.short)}</span>` : ""}</dt><dd>${esc(x.text)}</dd></div>`).join("");
+      const bgHTML = list(bgInfo), termHTML = list(termInfo);
+      if (!bgHTML && !termHTML) { box.innerHTML = `<p class="xb-note">We couldn't find simple explanations for this one. Try the source link for the full story.</p>`; loaded = false; return; }
+      box.innerHTML = (bgHTML ? `<h4>The bigger story</h4><dl>${bgHTML}</dl>` : "") +
+        (termHTML ? `<h4>Who and what</h4><dl>${termHTML}</dl>` : "") +
+        `<p class="xb-note">Explanations from Simple English Wikipedia, written in plain language.</p>`;
+    });
+    return wrap;
+  }
+
   /* ---------- saved stories + search registry ---------- */
   let saved = store.get("saved", []);
   const registry = new Map(); // id -> {title,url,source}
@@ -203,7 +281,10 @@
       const url = main.content_urls?.desktop?.page || (boldHref ? `${WIKI}/wiki/${boldHref}` : WIKI);
       const text = doc.body.textContent.trim();
       const id = register({ id: "brief:" + (main.title || k), title: text, url, source: "Wikipedia · In the news" });
-      return { id, doc, img: img || null, extract: main.extract, mainTitle: main.normalizedtitle || main.title, url, text };
+      const titles = wikiTitles(doc.body);
+      const lead = decodeURIComponent(boldHref).replace(/_/g, " ");
+      return { id, doc, img: img || null, mainTitle: main.normalizedtitle || main.title, url, text,
+        explain: { background: lead ? [lead] : [], words: titles.filter(t => t !== lead) } };
     });
     if (!brief.items.length) { stage.innerHTML = `<p class="muted">Today's top stories are still being written. Check the wire below.</p>`; return; }
     $("#brief-progress").innerHTML = brief.items.map((_, k) => `<button type="button" aria-label="Story ${k + 1}"></button>`).join("");
@@ -226,9 +307,7 @@
     if (pic) pic.addEventListener("load", () => pic.classList.toggle("fit", pic.naturalWidth / pic.naturalHeight > 1.9));
     const txt = $(".story-text", stage);
     txt.appendChild(h);
-    if (it.extract) {
-      txt.insertAdjacentHTML("beforeend", `<details class="explain"><summary>What's this about?</summary><p>${esc(it.extract)}</p></details>`);
-    }
+    txt.appendChild(explainButton(it.explain));
     txt.insertAdjacentHTML("beforeend", `<div class="story-actions"><a class="pill-btn" href="${esc(it.url)}" target="_blank" rel="noopener">Read more</a>${actionButtons(it.id)}</div>`);
     $("#brief-pos").textContent = `${brief.i + 1} / ${n}`;
     $$("#brief-progress button").forEach((b, k) => b.classList.toggle("on", k <= brief.i));
@@ -240,7 +319,7 @@
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     brief.timer = setInterval(() => {
       const card = $(".brief");
-      if (document.hidden || card.matches(":hover") || card.contains(document.activeElement) || $(".explain[open]", card)) return;
+      if (document.hidden || card.matches(":hover") || card.contains(document.activeElement) || $(".explain-box:not([hidden])", card)) return;
       showBrief(brief.i + 1);
     }, 9000);
   }
@@ -424,24 +503,26 @@
     if (!content) return [];
     const groups = [];
     let cur = null;
-    const walk = (ul, ctx, out) => {
+    const walk = (ul, ctx, ctxTitles, out) => {
       for (const li of ul.children) {
         if (li.tagName !== "LI") continue;
         const sub = li.querySelector(":scope > ul");
         const own = li.cloneNode(true);
         own.querySelectorAll("ul").forEach(u => u.remove());
         const label = own.textContent.replace(/\s+/g, " ").trim();
+        const item = { ctx, ctxTitles, node: own, text: label };
         if (sub) {
-          if (label.length > 110) out.push({ ctx, node: own, text: label });
-          walk(sub, label.length > 110 ? ctx : [...ctx, label], out);
-        } else if (label) out.push({ ctx, node: own, text: label });
+          const isStory = label.length > 110;
+          if (isStory) out.push(item);
+          walk(sub, isStory ? ctx : [...ctx, label], isStory ? ctxTitles : [...ctxTitles, ...wikiTitles(own)], out);
+        } else if (label) out.push(item);
       }
     };
     for (const el of content.children) {
       if (el.tagName === "P" && el.querySelector("b")) { cur = { name: el.textContent.trim(), items: [] }; groups.push(cur); }
       else if (el.tagName === "UL") {
         if (!cur) { cur = { name: "Other news", items: [] }; groups.push(cur); }
-        walk(el, [], cur.items);
+        walk(el, [], [], cur.items);
       }
     }
     return groups.filter(g => g.items.length);
@@ -508,6 +589,7 @@
         p.className = "wire-text";
         p.appendChild(cleanWikiHTML(it.node, { markSource: true }));
         left.appendChild(p);
+        left.appendChild(explainButton({ background: it.ctxTitles.slice(-2).reverse(), words: wikiTitles(it.node) }));
         row.appendChild(left);
         row.insertAdjacentHTML("beforeend", `<div class="row-actions">${actionButtons(id, { compact: true, shareBtn: false })}</div>`);
         sec.appendChild(row);
